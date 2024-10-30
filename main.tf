@@ -2,32 +2,51 @@
 terraform {
   required_providers {
     proxmox = {
-      source = "telmate/proxmox"
+      source  = "telmate/proxmox"
       version = "3.0.1-rc4"
     }
   }
 }
 
 provider "proxmox" {
-  pm_api_url = "https://192.168.0.100:8006/api2/json"
-  pm_api_token_id = "root@pam!tokenid001"
+  pm_api_url          = "https://192.168.0.100:8006/api2/json"
+  pm_api_token_id     = "root@pam!tokenid001"
   pm_api_token_secret = "bf710f10-56f5-4b37-a91f-5c779d9b8185"
-  pm_tls_insecure = true
+  pm_tls_insecure     = true
 }
 
-resource "proxmox_vm_qemu" "my_vm" {
- name       = "my-vm"
- target_node = "zsus-pve"
- clone      = "VM 9003"
- agent = 1
- os_type = "cloud-init"
- sockets = 1
- vcpus = 0
- cpu = "host"
- cores      = 2
- memory     = 2048
- scsihw = "virtio-scsi-pci"
- 
+# Common VM configuration
+locals {
+  vm_base_config = {
+    target_node = "zsus-pve"
+    clone       = "VM 9003"
+    agent       = 1
+    os_type     = "cloud-init"
+    sockets     = 1
+    vcpus       = 0
+    cpu         = "host"
+    cores       = 2
+    memory      = 2048
+    scsihw      = "virtio-scsi-pci"
+  }
+}
+
+# VM 1
+resource "proxmox_vm_qemu" "vm_1" {
+  name = "my-vm-1"
+  
+  # Apply base configuration
+  target_node = local.vm_base_config.target_node
+  clone       = local.vm_base_config.clone
+  agent       = local.vm_base_config.agent
+  os_type     = local.vm_base_config.os_type
+  sockets     = local.vm_base_config.sockets
+  vcpus       = local.vm_base_config.vcpus
+  cpu         = local.vm_base_config.cpu
+  cores       = local.vm_base_config.cores
+  memory      = local.vm_base_config.memory
+  scsihw      = local.vm_base_config.scsihw
+
   disks {
     ide {
       ide2 {
@@ -39,52 +58,177 @@ resource "proxmox_vm_qemu" "my_vm" {
     scsi {
       scsi0 {
         disk {
-          size = 20
-          cache = "writeback"
-          storage = "local-lvm"
+          size      = 20
+          cache     = "writeback"
+          storage   = "local-lvm"
           replicate = true
         }
       }
     }
   }
+
   vga {
-    type = "std"
+    type   = "std"
     memory = 4
   }
+
+  # External network interface (connected to physical NIC)
   network {
-    model = "virtio"
-    bridge = "vmbr0"
+    model  = "virtio"
+    bridge = "vmbr0"  # This bridge is connected to physical network
   }
+
+  # Private network interface for VM1-VM2 connection
+  network {
+    model  = "virtio"
+    bridge = "private0"  # Internal bridge, not connected to physical network
+  }
+
   serial {
-    id = 0
+    id   = 0
     type = "socket"
   }
-  boot = "order=scsi0"
-  ipconfig0 = "ip=dhcp"
-  ciuser = "test"
+
+  boot       = "order=scsi0"
+  ipconfig0  = "ip=dhcp"
+  ipconfig1  = "ip=192.168.10.1/24"  # Static IP for private network
+  ciuser     = "test"
   cipassword = "test"
 }
 
+# VM 2
+resource "proxmox_vm_qemu" "vm_2" {
+  name = "my-vm-2"
+  
+  # Apply base configuration
+  target_node = local.vm_base_config.target_node
+  clone       = local.vm_base_config.clone
+  agent       = local.vm_base_config.agent
+  os_type     = local.vm_base_config.os_type
+  sockets     = local.vm_base_config.sockets
+  vcpus       = local.vm_base_config.vcpus
+  cpu         = local.vm_base_config.cpu
+  cores       = local.vm_base_config.cores
+  memory      = local.vm_base_config.memory
+  scsihw      = local.vm_base_config.scsihw
 
+  disks {
+    ide {
+      ide2 {
+        cloudinit {
+          storage = "local-lvm"
+        }
+      }
+    }
+    scsi {
+      scsi0 {
+        disk {
+          size      = 20
+          cache     = "writeback"
+          storage   = "local-lvm"
+          replicate = true
+        }
+      }
+    }
+  }
 
-# # Define a Proxmox VM resource
-# resource "proxmox_vm_qemu" "example_vm" {
-#   count = 2  # Create 2 identical VMs
-#   name = "vm-${count.index + 1}"
-#   target_node = "zsus-pve"
-#   vm_state = "running"
-#
-#   # VM Template name
-#   clone = "StdDebian"
-#   cores = 4
-#   memory = 2048
-#   agent = 1
-#   ipconfig0 = "dhcp"
-#   bootdisk = "scsi0"
-#
-# }
-#
-# # Output the VM IPs
-# output "vm_ips" {
-#   value = proxmox_vm_qemu.example_vm[*].default_ipv4_address
-# }
+  vga {
+    type   = "std"
+    memory = 4
+  }
+
+  # External network interface (connected to physical NIC)
+  network {
+    model  = "virtio"
+    bridge = "vmbr0"  # This bridge is connected to physical network
+  }
+
+  # Private network interface for VM1-VM2 connection
+  network {
+    model  = "virtio"
+    bridge = "private0"  # Internal bridge, not connected to physical network
+  }
+
+  # Private network interface for VM2-VM3 connection
+  network {
+    model  = "virtio"
+    bridge = "private1"  # Internal bridge, not connected to physical network
+  }
+
+  serial {
+    id   = 0
+    type = "socket"
+  }
+
+  boot       = "order=scsi0"
+  ipconfig0  = "ip=dhcp"
+  ipconfig1  = "ip=192.168.10.2/24"  # Static IP for first private network
+  ipconfig2  = "ip=192.168.20.1/24"  # Static IP for second private network
+  ciuser     = "test"
+  cipassword = "test"
+}
+
+# VM 3
+resource "proxmox_vm_qemu" "vm_3" {
+  name = "my-vm-3"
+  
+  # Apply base configuration
+  target_node = local.vm_base_config.target_node
+  clone       = local.vm_base_config.clone
+  agent       = local.vm_base_config.agent
+  os_type     = local.vm_base_config.os_type
+  sockets     = local.vm_base_config.sockets
+  vcpus       = local.vm_base_config.vcpus
+  cpu         = local.vm_base_config.cpu
+  cores       = local.vm_base_config.cores
+  memory      = local.vm_base_config.memory
+  scsihw      = local.vm_base_config.scsihw
+
+  disks {
+    ide {
+      ide2 {
+        cloudinit {
+          storage = "local-lvm"
+        }
+      }
+    }
+    scsi {
+      scsi0 {
+        disk {
+          size      = 20
+          cache     = "writeback"
+          storage   = "local-lvm"
+          replicate = true
+        }
+      }
+    }
+  }
+
+  vga {
+    type   = "std"
+    memory = 4
+  }
+
+  # External network interface (connected to physical NIC)
+  network {
+    model  = "virtio"
+    bridge = "vmbr0"  # This bridge is connected to physical network
+  }
+
+  # Private network interface for VM2-VM3 connection
+  network {
+    model  = "virtio"
+    bridge = "private1"  # Internal bridge, not connected to physical network
+  }
+
+  serial {
+    id   = 0
+    type = "socket"
+  }
+
+  boot       = "order=scsi0"
+  ipconfig0  = "ip=dhcp"
+  ipconfig1  = "ip=192.168.20.2/24"  # Static IP for private network
+  ciuser     = "test"
+  cipassword = "test"
+}
