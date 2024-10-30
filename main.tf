@@ -15,6 +15,8 @@ provider "proxmox" {
   pm_tls_insecure     = true
 }
 
+
+
 # Common VM configuration
 locals {
   vm_base_config = {
@@ -90,16 +92,20 @@ resource "proxmox_vm_qemu" "vm_1" {
   }
 
   boot       = "order=scsi0"
-  ipconfig0  = "ip=dhcp"
+  nameserver = "192.168.0.1"
+  ipconfig0  = "ip=192.168.0.50/24,gw=192.168.0.1"
   ipconfig1  = "ip=192.168.10.1/24"  # Static IP for private network
   ciuser     = "test"
   cipassword = "test"
+  sshkeys    = file("~/.ssh/id_rsa.pub")
+
 }
 
 # VM 2
 resource "proxmox_vm_qemu" "vm_2" {
   name = "my-vm-2"
-  
+  depends_on = [proxmox_vm_qemu.vm_1]
+
   # Apply base configuration
   target_node = local.vm_base_config.target_node
   clone       = local.vm_base_config.clone
@@ -161,16 +167,20 @@ resource "proxmox_vm_qemu" "vm_2" {
   }
 
   boot       = "order=scsi0"
-  ipconfig0  = "ip=dhcp"
+  nameserver = "192.168.0.1"
+  ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
   ipconfig1  = "ip=192.168.10.2/24"  # Static IP for first private network
   ipconfig2  = "ip=192.168.20.1/24"  # Static IP for second private network
   ciuser     = "test"
   cipassword = "test"
+  sshkeys    = file("~/.ssh/id_rsa.pub")
+
 }
 
 # VM 3
 resource "proxmox_vm_qemu" "vm_3" {
   name = "my-vm-3"
+  depends_on = [proxmox_vm_qemu.vm_2]
   
   # Apply base configuration
   target_node = local.vm_base_config.target_node
@@ -227,8 +237,12 @@ resource "proxmox_vm_qemu" "vm_3" {
   }
 
   boot       = "order=scsi0"
-  ipconfig0  = "ip=dhcp"
+  nameserver = "192.168.0.1"
+  ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
   ipconfig1  = "ip=192.168.20.2/24"  # Static IP for private network
   ciuser     = "test"
   cipassword = "test"
+  sshkeys    = file("~/.ssh/id_rsa.pub")
 }
+
+
