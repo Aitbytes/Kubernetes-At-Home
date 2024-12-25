@@ -78,6 +78,8 @@ resource "proxmox_vm_qemu" "vm_1" {
   network {
     model  = "virtio"
     bridge = "vmbr0"  # This bridge is connected to physical network
+    macaddr = "7E:DF:B4:97:C7:1A" 
+    # On the local router the dhcp resevation was set for this mac address
   }
 
 
@@ -88,9 +90,9 @@ resource "proxmox_vm_qemu" "vm_1" {
 
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.50/24,gw=192.168.0.1"
-  ciuser     = "test"
-  cipassword = "test"
+  ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
+  ciuser     = var.ciuser
+  cipassword = var.cipassword
   sshkeys    = file("~/.ssh/id_rsa.pub")
 
 }
@@ -141,6 +143,8 @@ resource "proxmox_vm_qemu" "vm_2" {
   network {
     model  = "virtio"
     bridge = "vmbr0"  # This bridge is connected to physical network
+    macaddr = "A6:2D:3A:F0:16:44"
+    # On the local router the dhcp resevation was set for this mac address
   }
 
 
@@ -157,9 +161,9 @@ resource "proxmox_vm_qemu" "vm_2" {
 
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
-  ciuser     = "test"
-  cipassword = "test"
+  ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
+  ciuser     = var.ciuser
+  cipassword = var.cipassword
   sshkeys    = file("~/.ssh/id_rsa.pub")
 
 }
@@ -210,6 +214,8 @@ resource "proxmox_vm_qemu" "vm_3" {
   network {
     model  = "virtio"
     bridge = "vmbr0"  # This bridge is connected to physical network
+    macaddr = "BE:50:AE:E3:AF:DC"
+    # On the local router the dhcp resevation was set for this mac address
   }
 
 
@@ -220,9 +226,9 @@ resource "proxmox_vm_qemu" "vm_3" {
 
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
-  ciuser     = "test"
-  cipassword = "test"
+  ipconfig0  = "ip=192.168.0.53/24,gw=192.168.0.1"
+  ciuser     = var.ciuser
+  cipassword = var.cipassword
   sshkeys    = file("~/.ssh/id_rsa.pub")
 }
 
