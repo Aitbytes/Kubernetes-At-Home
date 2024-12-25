@@ -9,9 +9,9 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url          = "https://zsus-pve:8006/api2/json"
-  pm_api_token_id     = "root@pam!tokenid001"
-  pm_api_token_secret = "bf710f10-56f5-4b37-a91f-5c779d9b8185"
+  pm_api_url          = var.pm_api_url         
+  pm_api_token_id     = var.pm_api_token_id    
+  pm_api_token_secret = var.pm_api_token_secret
   pm_tls_insecure     = true
 }
 
