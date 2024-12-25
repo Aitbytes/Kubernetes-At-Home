@@ -4,7 +4,7 @@
 This project contains Terraform configurations for provisioning virtual machines on a Proxmox server. It sets up three VMs with common configurations and specific network settings.
 
 ## Prerequisites
-- Terraform installed on your machine.
+- Terraform or OpenTofu installed on your machine.
 - Access to a Proxmox server.
 - Proxmox API token for authentication.
 
@@ -23,7 +23,12 @@ Or
 tofu init
 ```
 
-4. Apply the configuration:
+4. Configure secrets inside `secrets.tfvars` or clone, modify and rename `example.secrets.tfvars`:
+   ```bash
+   cp example.secrets.tfvars secrets.tfvars
+   ```
+
+5. Apply the configuration:
    ```bash
    terraform apply -var-file="secrets.tfvars"
    ```
