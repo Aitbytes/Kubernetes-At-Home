@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "proxmox" {
-  pm_api_url          = "https://192.168.0.100:8006/api2/json"
+  pm_api_url          = "https://zsus-pve:8006/api2/json"
   pm_api_token_id     = "root@pam!tokenid001"
   pm_api_token_secret = "bf710f10-56f5-4b37-a91f-5c779d9b8185"
   pm_tls_insecure     = true
@@ -156,10 +156,10 @@ resource "proxmox_vm_qemu" "vm_2" {
   }
 
   # Private network interface for VM2-VM3 connection
-  network {
-    model  = "virtio"
-    bridge = "private1"  # Internal bridge, not connected to physical network
-  }
+  # network {
+  #   model  = "virtio"
+  #   bridge = "private1"  # Internal bridge, not connected to physical network
+  # }
 
   serial {
     id   = 0
@@ -170,7 +170,7 @@ resource "proxmox_vm_qemu" "vm_2" {
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
   ipconfig1  = "ip=192.168.10.2/24"  # Static IP for first private network
-  ipconfig2  = "ip=192.168.20.1/24"  # Static IP for second private network
+  # ipconfig2  = "ip=192.168.20.1/24"  # Static IP for second private network
   ciuser     = "test"
   cipassword = "test"
   sshkeys    = file("~/.ssh/id_rsa.pub")
@@ -228,7 +228,7 @@ resource "proxmox_vm_qemu" "vm_3" {
   # Private network interface for VM2-VM3 connection
   network {
     model  = "virtio"
-    bridge = "private1"  # Internal bridge, not connected to physical network
+    bridge = "private0"  # Internal bridge, not connected to physical network
   }
 
   serial {
@@ -239,7 +239,7 @@ resource "proxmox_vm_qemu" "vm_3" {
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
-  ipconfig1  = "ip=192.168.20.2/24"  # Static IP for private network
+  ipconfig1  = "ip=192.168.10.3/24"  # Static IP for private network
   ciuser     = "test"
   cipassword = "test"
   sshkeys    = file("~/.ssh/id_rsa.pub")
