@@ -80,11 +80,6 @@ resource "proxmox_vm_qemu" "vm_1" {
     bridge = "vmbr0"  # This bridge is connected to physical network
   }
 
-  # Private network interface for VM1-VM2 connection
-  network {
-    model  = "virtio"
-    bridge = "private0"  # Internal bridge, not connected to physical network
-  }
 
   serial {
     id   = 0
@@ -94,7 +89,6 @@ resource "proxmox_vm_qemu" "vm_1" {
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=192.168.0.50/24,gw=192.168.0.1"
-  ipconfig1  = "ip=192.168.10.1/24"  # Static IP for private network
   ciuser     = "test"
   cipassword = "test"
   sshkeys    = file("~/.ssh/id_rsa.pub")
@@ -149,11 +143,6 @@ resource "proxmox_vm_qemu" "vm_2" {
     bridge = "vmbr0"  # This bridge is connected to physical network
   }
 
-  # Private network interface for VM1-VM2 connection
-  network {
-    model  = "virtio"
-    bridge = "private0"  # Internal bridge, not connected to physical network
-  }
 
   # Private network interface for VM2-VM3 connection
   # network {
@@ -169,8 +158,6 @@ resource "proxmox_vm_qemu" "vm_2" {
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
-  ipconfig1  = "ip=192.168.10.2/24"  # Static IP for first private network
-  # ipconfig2  = "ip=192.168.20.1/24"  # Static IP for second private network
   ciuser     = "test"
   cipassword = "test"
   sshkeys    = file("~/.ssh/id_rsa.pub")
@@ -225,11 +212,6 @@ resource "proxmox_vm_qemu" "vm_3" {
     bridge = "vmbr0"  # This bridge is connected to physical network
   }
 
-  # Private network interface for VM2-VM3 connection
-  network {
-    model  = "virtio"
-    bridge = "private0"  # Internal bridge, not connected to physical network
-  }
 
   serial {
     id   = 0
@@ -239,7 +221,6 @@ resource "proxmox_vm_qemu" "vm_3" {
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
-  ipconfig1  = "ip=192.168.10.3/24"  # Static IP for private network
   ciuser     = "test"
   cipassword = "test"
   sshkeys    = file("~/.ssh/id_rsa.pub")
