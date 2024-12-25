@@ -17,11 +17,14 @@ variable "pm_api_token_secret" {
 variable "ciuser" {
   description = "Default User for everynode"
   type        = string
-  sensitive   = true
 }
-variable "cipassword" {
-  description = "Default User password for everynode"
-  type        = string
-  sensitive   = true
+resource "random_password" "ci_password" {
+  length  = 16
+  special = true
+}
+
+output "cipassword" {
+  value     = random_password.ci_password.result
+  sensitive = true
 }
 
