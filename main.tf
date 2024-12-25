@@ -15,10 +15,23 @@ provider "proxmox" {
   pm_tls_insecure     = true
 }
 
-
-
-# Common VM configuration
+# VM configuration variables
 locals {
+  vm_configs = [
+    {
+      name    = "k3s-vm-1"
+      macaddr = "7E:DF:B4:97:C7:1A"
+    },
+    {
+      name    = "k3s-vm-2"
+      macaddr = "A6:2D:3A:F0:16:44"
+    },
+    {
+      name    = "k3s-vm-3"
+      macaddr = "BE:50:AE:E3:AF:DC"
+    }
+  ]
+
   vm_base_config = {
     target_node = "zsus-pve"
     clone       = "VM 9003"
@@ -33,11 +46,14 @@ locals {
   }
 }
 
-# VM 1
-resource "proxmox_vm_qemu" "vm_1" {
-  name = "my-vm-1"
-  
-  # Apply base configuration
+# VM resource
+resource "proxmox_vm_qemu" "vms" {
+  count = length(local.vm_configs)
+  name  = local.vm_configs[count.index].name
+  vmid  = 500 + count.index
+
+
+  # Base configuration
   target_node = local.vm_base_config.target_node
   clone       = local.vm_base_config.clone
   agent       = local.vm_base_config.agent
@@ -74,14 +90,12 @@ resource "proxmox_vm_qemu" "vm_1" {
     memory = 4
   }
 
-  # External network interface (connected to physical NIC)
   network {
-    model  = "virtio"
-    bridge = "vmbr0"  # This bridge is connected to physical network
-    macaddr = "7E:DF:B4:97:C7:1A" 
-    # On the local router the dhcp resevation was set for this mac address
-  }
+    model   = "virtio"
+    bridge  = "vmbr0"
+    macaddr = local.vm_configs[count.index].macaddr
 
+  }
 
   serial {
     id   = 0
@@ -90,146 +104,8 @@ resource "proxmox_vm_qemu" "vm_1" {
 
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.51/24,gw=192.168.0.1"
-  ciuser     = var.ciuser
-  cipassword = var.cipassword
-  sshkeys    = file("~/.ssh/id_rsa.pub")
-
-}
-
-# VM 2
-resource "proxmox_vm_qemu" "vm_2" {
-  name = "my-vm-2"
-  depends_on = [proxmox_vm_qemu.vm_1]
-
-  # Apply base configuration
-  target_node = local.vm_base_config.target_node
-  clone       = local.vm_base_config.clone
-  agent       = local.vm_base_config.agent
-  os_type     = local.vm_base_config.os_type
-  sockets     = local.vm_base_config.sockets
-  vcpus       = local.vm_base_config.vcpus
-  cpu         = local.vm_base_config.cpu
-  cores       = local.vm_base_config.cores
-  memory      = local.vm_base_config.memory
-  scsihw      = local.vm_base_config.scsihw
-
-  disks {
-    ide {
-      ide2 {
-        cloudinit {
-          storage = "local-lvm"
-        }
-      }
-    }
-    scsi {
-      scsi0 {
-        disk {
-          size      = 20
-          cache     = "writeback"
-          storage   = "local-lvm"
-          replicate = true
-        }
-      }
-    }
-  }
-
-  vga {
-    type   = "std"
-    memory = 4
-  }
-
-  # External network interface (connected to physical NIC)
-  network {
-    model  = "virtio"
-    bridge = "vmbr0"  # This bridge is connected to physical network
-    macaddr = "A6:2D:3A:F0:16:44"
-    # On the local router the dhcp resevation was set for this mac address
-  }
-
-
-  # Private network interface for VM2-VM3 connection
-  # network {
-  #   model  = "virtio"
-  #   bridge = "private1"  # Internal bridge, not connected to physical network
-  # }
-
-  serial {
-    id   = 0
-    type = "socket"
-  }
-
-  boot       = "order=scsi0"
-  nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.52/24,gw=192.168.0.1"
-  ciuser     = var.ciuser
-  cipassword = var.cipassword
-  sshkeys    = file("~/.ssh/id_rsa.pub")
-
-}
-
-# VM 3
-resource "proxmox_vm_qemu" "vm_3" {
-  name = "my-vm-3"
-  depends_on = [proxmox_vm_qemu.vm_2]
-  
-  # Apply base configuration
-  target_node = local.vm_base_config.target_node
-  clone       = local.vm_base_config.clone
-  agent       = local.vm_base_config.agent
-  os_type     = local.vm_base_config.os_type
-  sockets     = local.vm_base_config.sockets
-  vcpus       = local.vm_base_config.vcpus
-  cpu         = local.vm_base_config.cpu
-  cores       = local.vm_base_config.cores
-  memory      = local.vm_base_config.memory
-  scsihw      = local.vm_base_config.scsihw
-
-  disks {
-    ide {
-      ide2 {
-        cloudinit {
-          storage = "local-lvm"
-        }
-      }
-    }
-    scsi {
-      scsi0 {
-        disk {
-          size      = 20
-          cache     = "writeback"
-          storage   = "local-lvm"
-          replicate = true
-        }
-      }
-    }
-  }
-
-  vga {
-    type   = "std"
-    memory = 4
-  }
-
-  # External network interface (connected to physical NIC)
-  network {
-    model  = "virtio"
-    bridge = "vmbr0"  # This bridge is connected to physical network
-    macaddr = "BE:50:AE:E3:AF:DC"
-    # On the local router the dhcp resevation was set for this mac address
-  }
-
-
-  serial {
-    id   = 0
-    type = "socket"
-  }
-
-  boot       = "order=scsi0"
-  nameserver = "192.168.0.1"
-  ipconfig0  = "ip=192.168.0.53/24,gw=192.168.0.1"
-  ciuser     = var.ciuser
-  cipassword = var.cipassword
+  ipconfig0  = "ip=dhcp"
+  ciuser     = "k3s-user-${count.index+1}"
+  cipassword = random_password.ci_password.result
   sshkeys    = file("~/.ssh/id_rsa.pub")
 }
-
-
