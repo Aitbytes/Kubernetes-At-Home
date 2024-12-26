@@ -1,0 +1,3 @@
+#!/bin/bash
+k3s kubectl get nodes -l "node-role.kubernetes.io/master=true" -o=jsonpath="{.items[*].metadata.name}" | tee /tmp/kubectl_verify.log
+
