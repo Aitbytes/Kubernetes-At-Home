@@ -1,3 +1,4 @@
+
 # Configure the Proxmox provider
 terraform {
   required_providers {
@@ -29,6 +30,7 @@ locals {
     {
       name    = "k3s-vm-3"
       macaddr = "BE:50:AE:E3:AF:DC"
+    },
     }
   ]
 
@@ -61,8 +63,8 @@ resource "proxmox_vm_qemu" "vms" {
   sockets     = local.vm_base_config.sockets
   vcpus       = local.vm_base_config.vcpus
   cpu         = local.vm_base_config.cpu
-  cores       = local.vm_base_config.cores
-  memory      = local.vm_base_config.memory
+  cores       = count.index <= 2 ? 2 : 3
+  memory      = count.index <= 2 ? 2048 : 3072
   scsihw      = local.vm_base_config.scsihw
 
   disks {
@@ -105,7 +107,7 @@ resource "proxmox_vm_qemu" "vms" {
   boot       = "order=scsi0"
   nameserver = "192.168.0.1"
   ipconfig0  = "ip=dhcp"
-  ciuser     = "k3s-user-${count.index+1}"
-  cipassword = random_password.ci_password.result
+  ciuser     = "user"
+  cipassword = "very-secret-password" #random_password.ci_password.result
   sshkeys    = file("~/.ssh/id_rsa.pub")
 }
