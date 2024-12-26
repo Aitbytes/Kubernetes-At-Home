@@ -1,0 +1,3 @@
+#!/bin/bash
+systemd-run -p RestartSec=2 -p Restart=on-failure --unit=k3s-init k3s server {{ server_init_args | trim }} | tee /tmp/k3s_init.log
+
