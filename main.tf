@@ -20,17 +20,19 @@ provider "proxmox" {
 locals {
   vm_configs = [
     {
-      name    = "k3s-vm-1"
       macaddr = "7E:DF:B4:97:C7:1A"
     },
     {
-      name    = "k3s-vm-2"
       macaddr = "A6:2D:3A:F0:16:44"
     },
     {
-      name    = "k3s-vm-3"
       macaddr = "BE:50:AE:E3:AF:DC"
     },
+    {
+      macaddr = "EE:79:E2:B2:65:DA"
+    },
+    {
+      macaddr = "1A:4D:02:1A:E2:80"
     }
   ]
 
@@ -51,7 +53,7 @@ locals {
 # VM resource
 resource "proxmox_vm_qemu" "vms" {
   count = length(local.vm_configs)
-  name  = local.vm_configs[count.index].name
+  name  = "k3s-vm-${count.index+1}-${count.index <= 2 ? "m" : "w" }"
   vmid  = 500 + count.index
 
 
