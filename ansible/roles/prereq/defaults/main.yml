@@ -1,0 +1,7 @@
+---
+# Add Ubuntu secure path
+secure_path:
+  RedHat: /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+  Suse: /usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin
+  Ubuntu: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
