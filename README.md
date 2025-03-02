@@ -38,5 +38,25 @@ tofu init
 - Each VM resource (`proxmox_vm_qemu`) inherits the base configuration.
 - Modify the `pm_api_url`, `pm_api_token_id`, and `pm_api_token_secret` in `main.tf` for your Proxmox setup.
 
+## Ansible stage
+
+Change into ansible directory
+```bash
+cd ansible
+```
+
+Run the `site.yml` playbook
+```bash
+ansible-playbook ./site.yml -i /inventory/proxmox/hosts.yml
+```
+
+Wait until the playbook finishes before coppying the config file from any host
+```bash
+ scp -o "StrictHostKeyChecking no"  user@192.168.0.51:~/.kube/config ~/.kube/config
+```
+
+
 ## License
 This project is licensed under the MIT License.
+
+
