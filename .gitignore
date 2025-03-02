@@ -3,6 +3,8 @@
 
 **/hosts.yml
 
+**/basic-auth-secret.yml.j2
+
 # Terraform state files
 *.tfstate
 *.tfstate.*
