@@ -75,3 +75,13 @@ spec:
             name: apache-php-service
             port:
               number: 80
+  - host: k3s-vm-1-m.aitbyteshome.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: apache-php-service
+            port:
+              number: 80
