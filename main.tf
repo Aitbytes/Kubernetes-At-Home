@@ -1,115 +1,129 @@
-
-# Configure the Proxmox provider
+# Configure the Google Cloud provider
 terraform {
   required_providers {
-    proxmox = {
-      source  = "telmate/proxmox"
-      version = "3.0.1-rc4"
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
+    ansible = {
+      version = "~> 1.3.0"
+      source  = "ansible/ansible"
     }
   }
 }
 
-provider "proxmox" {
-  pm_api_url          = var.pm_api_url         
-  pm_api_token_id     = var.pm_api_token_id    
-  pm_api_token_secret = var.pm_api_token_secret
-  pm_tls_insecure     = true
+provider "google" {
+  credentials = file("./secrets/credentials.json")
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
 }
 
 # VM configuration variables
 locals {
   vm_configs = [
     {
-      macaddr = "7E:DF:B4:97:C7:1A"
+      name = "k3s-vm-1-m"
+      machine_type = "e2-medium"  # 2 vCPU, 4GB memory
+      tags = ["k3s", "master"]
     },
     {
-      macaddr = "A6:2D:3A:F0:16:44"
+      name = "k3s-vm-2-m"
+      machine_type = "e2-medium"
+      tags = ["k3s", "master"]
     },
     {
-      macaddr = "BE:50:AE:E3:AF:DC"
+      name = "k3s-vm-3-m"
+      machine_type = "e2-medium"
+      tags = ["k3s", "master"]
     },
     {
-      macaddr = "EE:79:E2:B2:65:DA"
+      name = "k3s-vm-4-w"
+      machine_type = "e2-medium"  
+      tags = ["k3s", "worker"]
     },
     {
-      macaddr = "1A:4D:02:1A:E2:80"
+      name = "k3s-vm-5-w"
+      machine_type = "e2-medium"
+      tags = ["k3s", "worker"]
     }
   ]
-
-  vm_base_config = {
-    target_node = "zsus-pve"
-    clone       = "VM 9003"
-    agent       = 1
-    os_type     = "cloud-init"
-    sockets     = 1
-    vcpus       = 0
-    cpu         = "host"
-    cores       = 2
-    memory      = 2048
-    scsihw      = "virtio-scsi-pci"
-  }
 }
 
-# VM resource
-resource "proxmox_vm_qemu" "vms" {
-  count = length(local.vm_configs)
-  name  = "k3s-vm-${count.index+1}-${count.index <= 2 ? "m" : "w" }"
-  vmid  = 500 + count.index
+# Create VMs
+resource "google_compute_instance" "vms" {
+  count        = length(local.vm_configs)
+  name         = local.vm_configs[count.index].name
+  machine_type = local.vm_configs[count.index].machine_type
+  zone         = var.zone
 
-
-  # Base configuration
-  target_node = local.vm_base_config.target_node
-  clone       = local.vm_base_config.clone
-  agent       = local.vm_base_config.agent
-  os_type     = local.vm_base_config.os_type
-  sockets     = local.vm_base_config.sockets
-  vcpus       = local.vm_base_config.vcpus
-  cpu         = local.vm_base_config.cpu
-  cores       = count.index <= 2 ? 2 : 3
-  memory      = count.index <= 2 ? 2048 : 3072
-  scsihw      = local.vm_base_config.scsihw
-
-  disks {
-    ide {
-      ide2 {
-        cloudinit {
-          storage = "local-lvm"
-        }
-      }
-    }
-    scsi {
-      scsi0 {
-        disk {
-          size      = 20
-          cache     = "writeback"
-          storage   = "local-lvm"
-          replicate = true
-        }
-      }
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-2004-lts"  # Use Ubuntu 20.04 LTS
+      size  = 20  # GB
+      type  = "pd-standard"  # Makes the disk persistent
     }
   }
 
-  vga {
-    type   = "std"
-    memory = 4
+  network_interface {
+    network = "default"
+    access_config {
+      // Ephemeral public IP
+    }
   }
 
-  network {
-    model   = "virtio"
-    bridge  = "vmbr0"
-    macaddr = local.vm_configs[count.index].macaddr
-
+  metadata = {
+    ssh-keys = "user:${file("~/.ssh/id_rsa.pub")}"
   }
 
-  serial {
-    id   = 0
-    type = "socket"
+  tags = local.vm_configs[count.index].tags
+
+  #metadata_startup_script = <<-EOF
+  #            #!/bin/bash
+  #            # Add any startup configuration here
+  #            EOF
+
+}
+
+# allow SSH with ufw
+resource "google_compute_firewall" "allow-ssh" {
+  name    = "allow-ssh"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22",
+                "80",
+                "8080",
+                "6444",
+                "6443",
+                "32002"]
   }
 
-  boot       = "order=scsi0"
-  nameserver = "192.168.0.1"
-  ipconfig0  = "ip=dhcp"
-  ciuser     = "user"
-  cipassword = "very-secret-password" #random_password.ci_password.result
-  sshkeys    = file("~/.ssh/id_rsa.pub")
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["k3s"]
+}
+
+output "master_nodes" {
+  value = {
+    for instance in google_compute_instance.vms :
+    instance.name => {
+      internal_ip = instance.network_interface[0].network_ip
+      external_ip = instance.network_interface[0].access_config[0].nat_ip
+    }
+    if can(regex("-m$", instance.name))
+  }
+  description = "IPs of master nodes"
+}
+
+output "worker_nodes" {
+  value = {
+    for instance in google_compute_instance.vms :
+    instance.name => {
+      internal_ip = instance.network_interface[0].network_ip
+      external_ip = instance.network_interface[0].access_config[0].nat_ip
+    }
+    if can(regex("-w$", instance.name))
+  }
+  description = "IPs of worker nodes"
 }
