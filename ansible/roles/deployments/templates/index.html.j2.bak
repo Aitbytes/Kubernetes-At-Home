@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to {{ inventory_hostname }}</title>
+</head>
+<body>
+    <h1>Hello from {{ inventory_hostname }}</h1>
+    <p>This is a unique file for the host: {{ ansible_fqdn }}</p>
+</body>
+</html>
+
+<?php phpinfo();
