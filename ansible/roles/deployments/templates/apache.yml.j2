@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-php-deployment
+  labels:
+    app: apache-php
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apache-php
+  template:
+    metadata:
+      labels:
+        app: apache-php
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: apache-php
+        env:
+        - name: APACHE_RUN_USER
+          value: www-data
+        - name: APACHE_RUN_GROUP
+          value: www-data
+        image: php:8.2-apache  # Using official PHP Apache image
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /var/www/html  # PHP Apache image uses different path
+          name: apache-volume
+      volumes:
+      - name: apache-volume
+        hostPath:
+          path: /home/user/html-files/
+          type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: apache-php-service
+  labels:
+    app: apache-php
+spec:
+  type: ClusterIP
+  selector:
+    app: apache-php
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apache-php-ingress
+  annotations:
+    #traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/auth-type: basic
+    traefik.ingress.kubernetes.io/auth-secret: basic-auth-secret
+spec:
+  rules:
+  - host: test-kube.aitbyteshome.net
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: apache-php-service
+            port:
+              number: 80
