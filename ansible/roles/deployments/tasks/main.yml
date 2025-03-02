@@ -1,0 +1,43 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/deployments
+- name: Delete existing files in html-files directory
+  file:
+    path: /home/user/html-files/
+    state: absent
+
+- name: Ensure the target html-files directory exists
+  file:
+    path: /home/user/html-files/
+    state: directory
+    owner: user
+    group: user
+    mode: '0755'
+
+
+- name: Copy the index.php file to each host
+  template:
+    src: templates/index.php.j2
+    dest: /home/user/html-files/index.php
+    owner: user
+    group: user
+    mode: '0644'
+
+
+- name: Copy nginx manifest to first master
+  template:
+    src: "apache.yml.j2"
+    dest: "/var/lib/rancher/k3s/server/manifests/apache-manifest.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
+
+- name: Copy auth secret manifest to first master
+  template:
+    src: "basic-auth-secret.yml.j2"
+    dest: "/var/lib/rancher/k3s/server/manifests/apache-secret.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
