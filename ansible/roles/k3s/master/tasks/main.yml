@@ -68,6 +68,15 @@
     mode: 0644
   when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
 
+- name: Copy portainer main manifest to first master
+  template:
+    src: "portainer.j2"
+    dest: "/var/lib/rancher/k3s/server/manifests/portainer.yaml"
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_host == hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0])
+
 - name: Create bash script for k3s initialization command
   ansible.builtin.template:
     src: "k3s_init.sh.j2"
