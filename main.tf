@@ -9,6 +9,10 @@ terraform {
       version = "~> 1.3.0"
       source  = "ansible/ansible"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 }
 
