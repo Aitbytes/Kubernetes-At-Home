@@ -1,62 +1,42 @@
-# Proxmox VM Configuration
+# Example usage :
 
-## Description
-This project contains Terraform configurations for provisioning virtual machines on a Proxmox server. It sets up three VMs with common configurations and specific network settings.
-
-## Prerequisites
-- Terraform or OpenTofu installed on your machine.
-- Access to a Proxmox server.
-- Proxmox API token for authentication.
-
-## Usage
-1. Clone this repository.
-2. Navigate to the directory containing `main.tf`.
-3. Initialize Terraform:
+Start by copying and editing the `secretvars` example file 
 
 ```bash
-terraform init
+cp ./secrets/secretvars.example.tf ./secrets/secretvars.tf
 ```
 
-Or
+Then download a service account key in the secrets directory. Make sure it has the following roles  :
+ - Compute Admin
+ - Compute Instance Admin (v1)
+
+Then edit the `main.tf` to reference it.
+
+```terraform
+# main.tf
+
+provider "google" {
+  credentials = file("./secrets/credentials.json") # Change this line
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
+}
+
+```
+Then use the following commands :
 
 ```bash
+
 tofu init
+tofu plan --var-file ./secrets/secretvars.tf
+tofu apply --var-file ./secrets/secretvars.tf
 ```
 
-4. Configure secrets inside `secrets.tfvars` or clone, modify and rename `example.secrets.tfvars`:
-   ```bash
-   cp example.secrets.tfvars secrets.tfvars
-   ```
+To output the IPs of the created machines :
 
-5. Apply the configuration:
-   ```bash
-   terraform apply -var-file="secrets.tfvars"
-   ```
-
-## Configuration
-- The base VM configuration is defined in the `locals` block.
-- Each VM resource (`proxmox_vm_qemu`) inherits the base configuration.
-- Modify the `pm_api_url`, `pm_api_token_id`, and `pm_api_token_secret` in `main.tf` for your Proxmox setup.
-
-## Ansible stage
-
-Change into ansible directory
 ```bash
-cd ansible
+tofu output master_nodes
+tofu output worker_nodes
+
 ```
-
-Run the `site.yml` playbook
-```bash
-ansible-playbook ./site.yml -i /inventory/proxmox/hosts.yml
-```
-
-Wait until the playbook finishes before coppying the config file from any host
-```bash
- scp -o "StrictHostKeyChecking no"  user@192.168.0.51:~/.kube/config ~/.kube/config
-```
-
-
-## License
-This project is licensed under the MIT License.
-
 
