@@ -1,30 +1,14 @@
-variable "pm_api_url" {
-  description = "Proxmox API URL"
+variable "region" {
+  description = "Region where the ressource are deployed"
   type        = string
-  sensitive   = true
 }
 
-variable "pm_api_token_id" {
-  description = "Proxmox Token ID for authentication"
+variable "zone" {
+  description = "Zone where the ressource are deployed"
   type        = string
-  sensitive   = true
-}
-variable "pm_api_token_secret" {
-  description = "Proxmox API token secret value"
-  type        = string
-  sensitive   = true
-}
-variable "ciuser" {
-  description = "Default User for everynode"
-  type        = string
-}
-resource "random_password" "ci_password" {
-  length  = 16
-  special = true
 }
 
-output "cipassword" {
-  value     = random_password.ci_password.result
-  sensitive = true
+variable "project_id" {
+  description = "ID of the project"
+  type        = string
 }
-
