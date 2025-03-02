@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer-agent
+  labels:
+    app: portainer-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portainer-agent
+  template:
+    metadata:
+      labels:
+        app: portainer-agent
+    spec:
+      containers:
+        - name: portainer-agent
+          image: portainer/agent:latest
+          ports:
+            - containerPort: 9001
+          env:
+            - name: AGENT_CLUSTER_ADDR
+              value: "tasks.portainer-agent"
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer-agent
+  labels:
+    app: portainer-agent
+spec:
+  type: NodePort
+  ports:
+    - port: 9001
+      targetPort: 9001
+      protocol: TCP
+      nodePort: 32001 # Specify the desired NodePort (e.g., 32001)
+  selector:
+    app: portainer-agent
+

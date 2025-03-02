@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+  labels:
+    app: hello-nginx
+spec:
+  containers:
+    - name: nginx-test2
+      image : nginx
+      ports: 
+        - containerPort: 80

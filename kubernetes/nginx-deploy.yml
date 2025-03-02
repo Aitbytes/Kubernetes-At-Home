@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myjob
+  labels:
+    app: myjob
+spec:
+  selector:
+    matchLabels:
+      app: myjob
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container:  myjob
+      labels:
+        app: myjob
+    spec:
+      # initContainers:
+        # Init containers are exactly like regular containers, except:
+          # - Init containers always run to completion.
+          # - Each init container must complete successfully before the next one starts.
+      containers:
+      - name: myjob
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: html-files
+          mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html-files
+          hostPath:
+            path: /home/user/html-files
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myjob-service
+spec:
+  type: NodePort
+  selector:
+    app: myjob
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080  # You can specify a port or let Kubernetes assign one
+
+
