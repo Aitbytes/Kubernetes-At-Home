@@ -32,11 +32,19 @@ tofu plan --var-file ./secrets/secretvars.tf
 tofu apply --var-file ./secrets/secretvars.tf
 ```
 
-To output the IPs of the created machines :
+You can reuse the IPs of the machines provisioned by terraform with the following command :
 
 ```bash
-tofu output master_nodes
-tofu output worker_nodes
 
+mv inventory.yml ./ansible/inventory/gcp/hosts.yml
 ```
+
+You can then proceed to start the ansible playbook :
+
+```bash
+cd ansible # Start by changing current directory
+ansible-playbook -i ./inventory/gcp/hosts.yml ./site.yml
+```
+
+And let the magic happen
 
