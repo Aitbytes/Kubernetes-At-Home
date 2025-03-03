@@ -1,11 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for roles/deployments
-- name: Delete existing files in html-files directory
-  file:
-    path: /home/user/html-files/
-    state: absent
-
 - name: Ensure the target html-files directory exists
   file:
     path: /home/user/html-files/
