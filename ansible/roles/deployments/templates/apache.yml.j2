@@ -16,6 +16,13 @@ spec:
     spec:
       securityContext:
         runAsUser: 0
+      initContainers:
+      - name: init-permissions
+        image: busybox
+        command: ["sh", "-c", "chown -R www-data:www-data /run/secrets/kubernetes.io/serviceaccount"]
+        volumeMounts:
+        - mountPath: /run/secrets/kubernetes.io/serviceaccount
+          name: serviceaccount-volume
       containers:
       - name: apache-php
         env:
@@ -23,20 +30,28 @@ spec:
           value: www-data
         - name: APACHE_RUN_GROUP
           value: www-data
-        image: php:8.2-apache  # Using official PHP Apache image
+        image: php:8.2-apache
         ports:
         - containerPort: 80
         volumeMounts:
-        - mountPath: /var/www/html  # PHP Apache image uses different path
+        - mountPath: /var/www/html
           name: apache-volume
+        - mountPath: /run/secrets/kubernetes.io/serviceaccount
+          name: serviceaccount-volume
+          readOnly: true
       volumes:
       - name: apache-volume
         hostPath:
           path: /home/user/html-files/
           type: DirectoryOrCreate
+      - name: serviceaccount-volume
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: ..
+              expirationSeconds: 3600
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -53,13 +68,11 @@ spec:
     targetPort: 80
 
 ---
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: apache-php-ingress
   annotations:
-    #traefik.ingress.kubernetes.io/router.entrypoints: web
     traefik.ingress.kubernetes.io/router.entrypoints: web
     traefik.ingress.kubernetes.io/auth-type: basic
     traefik.ingress.kubernetes.io/auth-secret: basic-auth-secret
